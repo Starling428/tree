@@ -17,11 +17,13 @@ var (
 	longSpace  = "         "
 	shortSpace = "   "
 	maxSpace   = "            "
+	lastPad    = " "
 	byteSize   = 12
 	hidden     *bool
 )
 
 func tree(dir string, pad *string, d int) {
+	d++
 	files, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatal(err)
@@ -35,10 +37,30 @@ func tree(dir string, pad *string, d int) {
 			*pad = ((*pad)[:len(*pad)-byteSize]) + dirPad
 			if files[len(files)-1] == file {
 				*pad = (*pad)[:len(*pad)-byteSize]
-				fmt.Println(strings.Replace(*pad, longSpace, shortSpace, -1) + lastdirPad + file.Name())
+				fmt.Println(strings.Replace(*pad, longSpace, shortSpace, -1)+lastdirPad+file.Name(), d)
+
+				subfiles, err := os.ReadDir(path.Join(dir, file.Name()))
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
+				if len(subfiles) != 0 && len(*pad) > 11 {
+					*pad = (*pad)[:len(*pad)-byteSize]
+					*pad = (*pad) + maxSpace
+				}
 				*pad = (*pad) + dirPad
+				if d != 0 {
+					*pad = startPad + *pad
+				} else {
+					*pad = longSpace + lastPad + *pad
+				}
+
+				tree(path.Join(dir, file.Name()), pad, d)
+
 			} else {
-				fmt.Println(strings.Replace(*pad, longSpace, shortSpace, -1) + file.Name())
+				fmt.Println(strings.Replace(*pad, longSpace, shortSpace, -1)+file.Name(), d)
+				*pad = startPad + *pad
+				tree(path.Join(dir, file.Name()), pad, d)
 			}
 		} else {
 			if d != 0 {
@@ -46,20 +68,14 @@ func tree(dir string, pad *string, d int) {
 			} else {
 				*pad = ((*pad)[:len(*pad)-byteSize]) + startPad
 			}
-			fmt.Println(strings.Replace(*pad, longSpace, shortSpace, -1) + file.Name())
+			specPad := strings.Replace(*pad, longSpace, shortSpace, -1)
+			fmt.Println(specPad[:len(specPad)-d]+file.Name(), d)
 		}
-		fi, err := os.Stat(path.Join(dir, file.Name()))
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		if fi.IsDir() {
-			*pad = startPad + *pad
-			d++
-			tree(path.Join(dir, file.Name()), pad, d)
-		}
+
 	}
-	*pad = (*pad)[byteSize:]
+	if len(*pad) > 11 {
+		*pad = (*pad)[byteSize:]
+	}
 	d--
 }
 
@@ -74,34 +90,6 @@ func main() {
 		log.Fatal(err)
 	}
 	padding := startPad
-	tree(curdir, &padding, 0)
-	//fi, err := os.Stat("D://Users/moses.sarkisov/go")
-	//if err != nil {
-	//	fmt.Println(err)
-	//	return
-	//}
-	//os.Chdir(fi.Name())
-	//fmt.Println(fi.Mode().String())
-	//if fi.IsDir() {
-	//	tree(fi.Name())
-	//}
+	tree(curdir, &padding, -1)
 
-	//fmt.Println(padding)
-
-	/*
-		name := ".idea"
-		fi, err := os.Stat(name)
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-		switch mode := fi.Mode(); {
-		case mode.IsDir():
-			// do directory stuff
-			fmt.Println("directory")
-		case mode.IsRegular():
-			// do file stuff
-			fmt.Println("file")
-		}
-	*/
 }
